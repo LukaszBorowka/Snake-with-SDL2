@@ -3,6 +3,12 @@
 #include <random>
 #include <SDL.h>
 
+const bool debugMode = true;
+
+void message(std::string message) {
+	if (debugMode) std::cout << message << "\n";
+}
+
 int randomIntBetween(int a, int b) {
 	std::random_device rd;
 	std::mt19937 gen(rd());
@@ -34,12 +40,12 @@ private:
 
 	Uint32 ticks;
 
-	const int fps = 8;
+	const int fps = 10;
 
-	const int boardSizeX = 31;
-	const int boardSizeY = 21;
+	const int boardSizeX = 35;
+	const int boardSizeY = 25;
 
-	const int squareSize = 30;
+	const int squareSize = 25;
 
 	const int gameWidth = this->boardSizeX * this->squareSize;
 	const int gameHeight = this->boardSizeY * this->squareSize;
@@ -142,15 +148,20 @@ private:
 		switch (direction) {
 		case 0:
 			this->snake[0].posY--;
+			message("Changed snake direction: UP");
 			break;
 		case 1:
 			this->snake[0].posX++;
+			message("Changed snake direction: RIGHT");
 			break;
 		case 2:
 			this->snake[0].posY++;
+			message("Changed snake direction: DOWN");
 			break;
 		case 3:
 			this->snake[0].posX--;
+			message("Changed snake direction: LEFT");
+			break;
 		}
 
 		// this part is responsible for looping mode (the snake teleporting thru walls)
@@ -160,15 +171,28 @@ private:
 		else if (this->snake[0].posY == -1) this->snake[0].posY = this->boardSizeY - 1;
 	}
 
+	bool isSnakeThere(int x, int y) {
+		for (SnakePart snakePart : snake) {
+			if (x == snakePart.posX && y == snakePart.posY) return true;
+		}
+		return false;
+	}
+
 	void createFood() {
-		this->foods.push_back(Food(
-			randomIntBetween(0, this->boardSizeX - 1),
-			randomIntBetween(0, this->boardSizeY - 1)));
+		int x, y;
+		do {
+			x = randomIntBetween(0, this->boardSizeX - 1);
+			y = randomIntBetween(0, this->boardSizeY - 1);
+			message("Creating random food position");
+		} while (isSnakeThere(x, y));
+		this->foods.push_back(Food(x, y));
+		message("Food created");
 	}
 
 	void checkIfEaten() {
 		for (int i = 0; i < this->foods.size(); i++) {
 			if (this->foods[i].posX == this->snake[0].posX && this->foods[i].posY == this->snake[0].posY) {
+				message("Food eaten");
 				this->snake.push_back(SnakePart(
 					this->snake[this->snake.size() - 1].posX,
 					this->snake[this->snake.size() - 1].posY,
@@ -179,16 +203,33 @@ private:
 		}
 	}
 
+	bool checkCollisions() {
+		for (int i = 1; i < this->snake.size(); i++) {
+			if (this->snake[i].posX == this->snake[0].posX &&
+				this->snake[i].posY == this->snake[0].posY) {
+				message("Collision detected");
+				return true;
+			}
+		}
+		return false;
+	}
+
 	void loop() {
-		while (isRunning) {
+		while (this->isRunning) {
 			this->ticks = SDL_GetTicks();
 			this->handleEvents();
 			this->moveSnake();
+			if (this->checkCollisions()) break;
 			this->checkIfEaten();
 			this->drawBoard();
 			this->drawFood();
 			this->drawSnake();
 			SDL_UpdateWindowSurface(this->window);
+			this->limitFps();
+		}
+		while (this->isRunning) {
+			this->ticks = SDL_GetTicks();
+			this->handleEvents();
 			this->limitFps();
 		}
 	}
@@ -207,23 +248,23 @@ public:
 			this->gameWidth,
 			this->gameHeight,
 			SDL_WINDOW_SHOWN);
-		if (this->window == NULL) {
+		if (this->window == nullptr) {
 			std::cerr << "Window could not be created. SDL error:\n" << SDL_GetError();
 			return;
 		}
 
 		this->surface = SDL_GetWindowSurface(this->window);
-		if (this->surface == NULL) {
+		if (this->surface == nullptr) {
 			std::cerr << "Surface error. SDL error:\n" << SDL_GetError();
 			return;
 		}
 
-		this->boardColor1 = SDL_MapRGB(this->surface->format, 40, 40, 40);
-		this->boardColor2 = SDL_MapRGB(this->surface->format, 50, 50, 50);
-		this->headColor = SDL_MapRGB(this->surface->format, 255, 100, 100);
-		this->bodyColor1 = SDL_MapRGB(this->surface->format, 150, 150, 150);
-		this->bodyColor2 = SDL_MapRGB(this->surface->format, 170, 170, 170);
-		this->foodColor = SDL_MapRGB(this->surface->format, 100, 100, 255);
+		this->boardColor1	= SDL_MapRGB(this->surface->format, 35, 35, 35);
+		this->boardColor2	= SDL_MapRGB(this->surface->format, 30, 30, 30);
+		this->headColor		= SDL_MapRGB(this->surface->format, 0, 90, 0);
+		this->bodyColor1	= SDL_MapRGB(this->surface->format, 80, 200, 80);
+		this->bodyColor2	= SDL_MapRGB(this->surface->format, 100, 255, 100);
+		this->foodColor		= SDL_MapRGB(this->surface->format, 200, 80, 80);
 
 		this->snake.push_back(SnakePart(this->boardSizeX / 2, this->boardSizeY / 2, this->headColor));
 		this->snake.push_back(SnakePart(this->boardSizeX / 2 - 1, this->boardSizeY / 2, this->bodyColor1));
