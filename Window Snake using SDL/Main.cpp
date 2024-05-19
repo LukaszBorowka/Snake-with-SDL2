@@ -40,12 +40,12 @@ private:
 
 	Uint32 ticks;
 
-	const int fps = 10;
+	const int fps = 7;
 
-	const int boardSizeX = 35;
-	const int boardSizeY = 25;
+	const int boardSizeX = 15;
+	const int boardSizeY = 11;
 
-	const int squareSize = 25;
+	const int squareSize = 60;
 
 	const int gameWidth = this->boardSizeX * this->squareSize;
 	const int gameHeight = this->boardSizeY * this->squareSize;
@@ -130,11 +130,14 @@ private:
 
 	void drawFood() {
 		for (const Food food : this->foods) {
-			for (int k = 0; k < this->squareSize * this->squareSize; k++) {
-				drawPixel(
-					food.posX * this->squareSize + k % this->squareSize,
-					food.posY * this->squareSize + k / this->squareSize,
-					this->foodColor);
+			for (int x = 0 - (this->squareSize / 2); x < this->squareSize / 2; x++) {
+				for (int y = 0 - (this->squareSize / 2); y < this->squareSize / 2; y++) {
+					if ((x * x) + (y * y) <= (this->squareSize / 2) * (this->squareSize / 2))
+						drawPixel(
+							food.posX * this->squareSize + this->squareSize / 2 + x,
+							food.posY * this->squareSize + this->squareSize / 2 + y,
+							this->foodColor);
+				}
 			}
 		}
 	}
