@@ -1,6 +1,14 @@
 #include <iostream>
 #include <vector>
+#include <random>
 #include <SDL.h>
+
+int randomIntBetween(int a, int b) {
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<> distr(a, b);
+	return distr(gen);
+}
 
 struct SnakePart {
 	int posX;
@@ -8,6 +16,13 @@ struct SnakePart {
 	Uint32 col;
 
 	SnakePart(int x, int y, Uint32 c) : posX(x), posY(y), col(c) {}
+};
+
+struct Food {
+	int posX;
+	int posY;
+
+	Food(int x, int y) : posX(x), posY(y) {}
 };
 
 class Game {
@@ -21,10 +36,10 @@ private:
 
 	const int fps = 8;
 
-	const int boardSizeX = 15;
-	const int boardSizeY = 15;
+	const int boardSizeX = 31;
+	const int boardSizeY = 21;
 
-	const int squareSize = 40;
+	const int squareSize = 30;
 
 	const int gameWidth = this->boardSizeX * this->squareSize;
 	const int gameHeight = this->boardSizeY * this->squareSize;
@@ -37,6 +52,7 @@ private:
 	Uint32 boardColor2;
 
 	std::vector<SnakePart> snake;
+	std::vector<Food> foods;
 
 	bool isRunning = false;
 
@@ -61,15 +77,19 @@ private:
 			if (this->event.type == SDL_KEYDOWN) {
 				switch (this->event.key.keysym.sym) {
 				case SDLK_w:
+				case SDLK_i:
 					if (prevDirection != 2) direction = 0;
 					break;
 				case SDLK_a:
+				case SDLK_j:
 					if (prevDirection != 1) direction = 3;
 					break;
 				case SDLK_s:
+				case SDLK_k:
 					if (prevDirection != 0) direction = 2;
 					break;
 				case SDLK_d:
+				case SDLK_l:
 					if (prevDirection != 3) direction = 1;
 					break;
 				}
@@ -92,12 +112,23 @@ private:
 	}
 
 	void drawSnake() {
-		for (const SnakePart snakePart : snake) {
+		for (const SnakePart snakePart : this->snake) {
 			for (int k = 0; k < this->squareSize * this->squareSize; k++) {
 				drawPixel(
 					snakePart.posX * this->squareSize + k % this->squareSize,
 					snakePart.posY * this->squareSize + k / this->squareSize,
 					snakePart.col);
+			}
+		}
+	}
+
+	void drawFood() {
+		for (const Food food : this->foods) {
+			for (int k = 0; k < this->squareSize * this->squareSize; k++) {
+				drawPixel(
+					food.posX * this->squareSize + k % this->squareSize,
+					food.posY * this->squareSize + k / this->squareSize,
+					this->foodColor);
 			}
 		}
 	}
@@ -122,21 +153,42 @@ private:
 			this->snake[0].posX--;
 		}
 
+		// this part is responsible for looping mode (the snake teleporting thru walls)
 		if (this->snake[0].posX == this->boardSizeX) this->snake[0].posX = 0;
-		if (this->snake[0].posX == -1) this->snake[0].posX = this->boardSizeX - 1;
+		else if (this->snake[0].posX == -1) this->snake[0].posX = this->boardSizeX - 1;
+		else if (this->snake[0].posY == this->boardSizeY) this->snake[0].posY = 0;
+		else if (this->snake[0].posY == -1) this->snake[0].posY = this->boardSizeY - 1;
+	}
 
-		if (this->snake[0].posY == this->boardSizeY) this->snake[0].posY = 0;
-		if (this->snake[0].posY == -1) this->snake[0].posY = this->boardSizeY - 1;
+	void createFood() {
+		this->foods.push_back(Food(
+			randomIntBetween(0, this->boardSizeX - 1),
+			randomIntBetween(0, this->boardSizeY - 1)));
+	}
+
+	void checkIfEaten() {
+		for (int i = 0; i < this->foods.size(); i++) {
+			if (this->foods[i].posX == this->snake[0].posX && this->foods[i].posY == this->snake[0].posY) {
+				this->snake.push_back(SnakePart(
+					this->snake[this->snake.size() - 1].posX,
+					this->snake[this->snake.size() - 1].posY,
+					(this->snake.size() % 2) ? this->bodyColor1 : this->bodyColor2));
+				this->foods.erase(this->foods.begin() + i);
+				this->createFood();
+			}
+		}
 	}
 
 	void loop() {
 		while (isRunning) {
 			this->ticks = SDL_GetTicks();
-			this->drawBoard();
-			this->drawSnake();
-			SDL_UpdateWindowSurface(this->window);
 			this->handleEvents();
 			this->moveSnake();
+			this->checkIfEaten();
+			this->drawBoard();
+			this->drawFood();
+			this->drawSnake();
+			SDL_UpdateWindowSurface(this->window);
 			this->limitFps();
 		}
 	}
@@ -166,15 +218,18 @@ public:
 			return;
 		}
 
-		boardColor1 = SDL_MapRGB(this->surface->format, 40, 40, 40);
-		boardColor2 = SDL_MapRGB(this->surface->format, 50, 50, 50);
-		headColor = SDL_MapRGB(this->surface->format, 255, 100, 100);
-		bodyColor1 = SDL_MapRGB(this->surface->format, 150, 150, 150);
-		bodyColor2 = SDL_MapRGB(this->surface->format, 170, 170, 170);
+		this->boardColor1 = SDL_MapRGB(this->surface->format, 40, 40, 40);
+		this->boardColor2 = SDL_MapRGB(this->surface->format, 50, 50, 50);
+		this->headColor = SDL_MapRGB(this->surface->format, 255, 100, 100);
+		this->bodyColor1 = SDL_MapRGB(this->surface->format, 150, 150, 150);
+		this->bodyColor2 = SDL_MapRGB(this->surface->format, 170, 170, 170);
+		this->foodColor = SDL_MapRGB(this->surface->format, 100, 100, 255);
 
-		snake.push_back(SnakePart(this->boardSizeX / 2, this->boardSizeY / 2, this->headColor));
-		snake.push_back(SnakePart(this->boardSizeX / 2 - 1, this->boardSizeY / 2, this->bodyColor1));
-		snake.push_back(SnakePart(this->boardSizeX / 2 - 2, this->boardSizeY / 2, this->bodyColor2));
+		this->snake.push_back(SnakePart(this->boardSizeX / 2, this->boardSizeY / 2, this->headColor));
+		this->snake.push_back(SnakePart(this->boardSizeX / 2 - 1, this->boardSizeY / 2, this->bodyColor1));
+		this->snake.push_back(SnakePart(this->boardSizeX / 2 - 2, this->boardSizeY / 2, this->bodyColor2));
+
+		this->createFood();
 
 		this->isRunning = true;
 		this->loop();
