@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <random>
+#include <string>
 #include <SDL.h>
 
 const bool debugMode = true;
@@ -63,6 +64,8 @@ private:
 	bool isRunning = false;
 
 	int direction = 1;
+
+	int score = 0;
 
 	void limitFps() {
 		if ((1000 / this->fps) > SDL_GetTicks() - this->ticks) {
@@ -196,6 +199,10 @@ private:
 		for (int i = 0; i < this->foods.size(); i++) {
 			if (this->foods[i].posX == this->snake[0].posX && this->foods[i].posY == this->snake[0].posY) {
 				message("Food eaten");
+				this->score++;
+				std::string newTitle = "Snake Game in c++ & SDL2!  |  score: " + std::to_string(score);
+				const char* newTitleChar = newTitle.c_str();
+				SDL_SetWindowTitle(this->window, newTitleChar);
 				this->snake.push_back(SnakePart(
 					this->snake[this->snake.size() - 1].posX,
 					this->snake[this->snake.size() - 1].posY,
@@ -245,7 +252,7 @@ public:
 		}
 
 		this->window = SDL_CreateWindow(
-			"Snake Game in c++ & SDL2!",
+			"Snake Game in c++ & SDL2!  |  score: 0",
 			SDL_WINDOWPOS_UNDEFINED,
 			SDL_WINDOWPOS_UNDEFINED,
 			this->gameWidth,
