@@ -4,7 +4,7 @@
 #include <string>
 #include <SDL.h>
 
-const bool debugMode = true;
+const bool debugMode = false;
 
 void message(std::string message) {
 	if (debugMode) std::cout << message << "\n";
@@ -43,10 +43,10 @@ private:
 
 	const int fps = 7;
 
-	const int boardSizeX = 15;
-	const int boardSizeY = 11;
+	const int boardSizeX = 30;
+	const int boardSizeY = 21;
 
-	const int squareSize = 60;
+	const int squareSize = 30;
 
 	const int gameWidth = this->boardSizeX * this->squareSize;
 	const int gameHeight = this->boardSizeY * this->squareSize;
@@ -88,18 +88,22 @@ private:
 				case SDLK_w:
 				case SDLK_i:
 					if (prevDirection != 2) direction = 0;
+					message("Changed snake direction: UP");
 					break;
 				case SDLK_a:
 				case SDLK_j:
 					if (prevDirection != 1) direction = 3;
+					message("Changed snake direction: LEFT");
 					break;
 				case SDLK_s:
 				case SDLK_k:
 					if (prevDirection != 0) direction = 2;
+					message("Changed snake direction: DOWN");
 					break;
 				case SDLK_d:
 				case SDLK_l:
 					if (prevDirection != 3) direction = 1;
+					message("Changed snake direction: RIGHT");
 					break;
 				}
 			}
@@ -154,19 +158,15 @@ private:
 		switch (direction) {
 		case 0:
 			this->snake[0].posY--;
-			message("Changed snake direction: UP");
 			break;
 		case 1:
 			this->snake[0].posX++;
-			message("Changed snake direction: RIGHT");
 			break;
 		case 2:
 			this->snake[0].posY++;
-			message("Changed snake direction: DOWN");
 			break;
 		case 3:
 			this->snake[0].posX--;
-			message("Changed snake direction: LEFT");
 			break;
 		}
 
